@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -258,10 +259,26 @@ func (e *State) union(aResults, bResults Results, biNode *parse.BinaryNode) []*U
 		}
 	}
 
+	re := regexp.MustCompile(`=[^,}]+`)
+	defaultLabelsString := re.ReplaceAllString(bResults.Values[1].GetLabels().String(), `=__default__`)
+	defaultLabels, _ := data.LabelsFromString(defaultLabelsString)
+
+	var defaultRow Value = nil
+	var defaultIndex = 0
+	for i, b := range bResults.Values {
+		if b.GetLabels().Contains(defaultLabels) {
+			defaultRow = b
+			defaultIndex = i
+			break
+		}
+	}
+	fmt.Printf("Default row after loop: %v\n", defaultRow)
+
 	for iA, a := range aResults.Values {
+		aLabels := a.GetLabels()
+		matched := false
 		for iB, b := range bResults.Values {
 			var labels data.Labels
-			aLabels := a.GetLabels()
 			bLabels := b.GetLabels()
 			switch {
 			case aLabels.Equals(bLabels) || len(aLabels) == 0 || len(bLabels) == 0:
@@ -270,12 +287,15 @@ func (e *State) union(aResults, bResults Results, biNode *parse.BinaryNode) []*U
 					l = bLabels
 				}
 				labels = l
+				matched = true
 			case len(aLabels) == len(bLabels):
 				continue // invalid union, drop for now
 			case aLabels.Contains(bLabels):
 				labels = aLabels
+				matched = true
 			case bLabels.Contains(aLabels):
 				labels = bLabels
+				matched = true
 			default:
 				continue
 			}
@@ -287,6 +307,16 @@ func (e *State) union(aResults, bResults Results, biNode *parse.BinaryNode) []*U
 			appendUnions(u)
 			aMatched[iA] = true
 			bMatched[iB] = true
+		}
+		if !matched {
+			u := &Union{
+				Labels: aLabels,
+				A:      a,
+				B:      defaultRow,
+			}
+			appendUnions(u)
+			aMatched[iA] = true
+			bMatched[defaultIndex] = true
 		}
 	}
 
