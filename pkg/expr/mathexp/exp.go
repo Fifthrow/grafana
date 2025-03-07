@@ -260,7 +260,7 @@ func (e *State) union(aResults, bResults Results, biNode *parse.BinaryNode) []*U
 	}
 
 	re := regexp.MustCompile(`=[^,}]+`)
-	defaultLabelsString := re.ReplaceAllString(bResults.Values[1].GetLabels().String(), `=__default__`)
+	defaultLabelsString := re.ReplaceAllString(bResults.Values[0].GetLabels().String(), `=__default__`)
 	defaultLabels, _ := data.LabelsFromString(defaultLabelsString)
 
 	var defaultRow Value = nil
