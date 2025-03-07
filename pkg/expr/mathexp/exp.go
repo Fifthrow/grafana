@@ -308,7 +308,7 @@ func (e *State) union(aResults, bResults Results, biNode *parse.BinaryNode) []*U
 			aMatched[iA] = true
 			bMatched[iB] = true
 		}
-		if !matched {
+		if !matched && defaultRow != nil {
 			u := &Union{
 				Labels: aLabels,
 				A:      a,
